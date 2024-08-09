@@ -6,28 +6,65 @@ Preambule: Hi! This was a lot of fun. Thanks for giving me this task. My repo is
 
 ## Executive Summary
 
-In this task, I have implemented a Transformer-based architecture utilizing the PPO training approach. I have compared my results with a vanilla Transformer approach, Blockhouse-provided mean reversion bot (blotter) and a PPO model from stable baselines, as well as a simple momentum strategy. My model beat the PPO model benchmark provided by Blockhouse and the blotter mean reversion simple trading strategy, but underperformed a simple momentum strategy (implemented by me).
+In this task, I have implemented a Transformer-based architecture utilizing the PPO training approach. I utilized [Google Collab](https://colab.research.google.com/drive/1J0KY0h-f6akrG-VAO-sl5d_ORIaNN8gl?usp=sharing) and used L4 GPU with 23GB of RAM. I have compared my results with a vanilla Transformer approach, Blockhouse-provided mean reversion bot (blotter) and a PPO model from stable baselines, as well as a simple momentum strategy. My model beat the PPO model benchmark provided by Blockhouse and the blotter mean reversion simple trading strategy, but underperformed a simple momentum strategy (implemented by me).
 
 ## Evaluation
 
 I have evaluated all of the algorithms on the held out test set (last 30% of the time sequence for the day).
 
 - Vanilla Transfomer: Did not learn to trade
-- Transformer + PPO: 
-    - Cumu 
+- Transformer + PPO - my implementation: 
+    - Cumulative reward: -3174
+    - Portfolio Value at Market Close: $10,006,779.095
+- PPO Agent from Stable Baselines:
+    - Cumulative reward: -2651
+    - Portfolio Value at Market Close: $10,000,321.125
+- Simple Mean Reversion (blotter):
+    - Cumulative reward: -3392
+    - Portfolio Value at Market Close: $9,941,926.795
+- Simple Momentum - my implementation:
+    - Portfolio Value at Market Close: $10,049,549.64
+    
 
+## Improvements Potential
+
+I only had ~3 days to implement this while also working full-time.
+Example directions I would iterate on:
+- Feature Engineering: Include additional data from the trading history and create lagging indicator features.
+- Do more hyperparameter and architecture search.
+- Increase the dataset size.
+
+Also some cool improvement directions from Claude:
+1. Attention Visualization: Implement attention visualization to understand what the model is focusing on when making decisions.
+2. Multi-step Returns: Use multi-step returns instead of single-step returns for more stable learning.
+3. Curiosity-driven Exploration: Implement intrinsic rewards based on prediction error to encourage exploration.
+4. Prioritized Experience Replay: Implement prioritized experience replay to focus on important transitions.
+5. Ensemble Methods: Use an ensemble of models to make more robust predictions.
+6. Curriculum Learning: Start with simpler trading scenarios and gradually increase complexity.
+7. Meta-learning: Implement meta-learning techniques to adapt quickly to market changes.
+8. Risk-aware Objectives: Incorporate risk measures (e.g., Sharpe ratio) directly into the objective function.
+9. Hierarchical RL: Implement a hierarchical structure with high-level strategy and low-level execution agents.
+10. Multi-agent Learning: Extend to multi-agent scenarios to model complex market dynamics.
+11. Adversarial Training: Use adversarial examples to make the model more robust to market manipulations.
+Interpretability: Implement techniques like SHAP values to explain model decisions.
 
 ## Technical Approach
 
 I started with a review of the task and the dataset and did some [EDA](https://chatgpt.com/share/aaf775a4-d960-49e3-b835-04af78a8f9bb).
 
+The market trades dataset was split into train and test to prevent information leakage. All algorithms benchmarked in this work were only trained on training set (from market open till roughly 3PM) and evaluated on trading data from 3PM till close (test set).
+
+I then started a vanilla transformer implementation, tweaked it to better work with numerical continuous values and did a lot of debugging to prevent exploding gradients.
+
+I then move on to combining the transformer architecture with PPO reinforcement learning strategy - where the actor agent proposes trade recommendations and critic predicts value of them and then they each have a separate loss function (this is not dissimilar from training GANs and looking for saddle points).
 
 Challenges I had to overcome:
 
-- Numerical instability: I had to dig deep to set up the right architecture which would not explode gradients on me. I utilized batch layer normalization, gradient clipping, early stopping, learning rate adjustments to overcome this issue.
+- Numerical instability: I had to dig deep to set up the right architecture which would not explode gradients on me. I utilized batch layer normalization, gradient clipping, early stopping, learning rate adjustments and robust monitoring to overcome this issue.
 - Train/test split - this is basic, but the originally assignment was overfitting the PPO model since it included the first 10k training steps in back-testing.
+- Model "underfitting": transformers are 'data-hungry' models and we are feeding in low-dimensional sequential data.
 
-- I implemented a transformer-based achitecture with PPO. I utilized techniques to reduce overfitting such as drop out.
+My final architecture attempted to reduce overfitting by using a more lightweight footprint with less attention heads, small number of layers, encoding actor embedding to 32 dimensional latent vector, not running through the batches multiple times, using bigger batch size (128) for gradient accumulation and using drop out.
 
 Final Model Architecture:
 
@@ -244,3 +281,5 @@ Hold: 30.06%, Buy: 33.83%, Sell: 36.11%
 Recommended Action: Sell
 ==================================================
 ```
+
+Happy to discuss the technical details of my approach further, just let me know.
